@@ -172,7 +172,10 @@ function parseTestSettings(argv) {
     }
   }
   if (typeof settings.globals == 'string' && settings.globals) {
-    var globals = readExternalGlobals(settings.globals);
+    settings.globals_path = settings.globals_path;
+  }
+  if (typeof settings.globals_path == 'string' && settings.globals_path) {
+    var globals = readExternalGlobals(settings.globals_path);
     if (globals && globals.hasOwnProperty(argv.e)) {
       test_settings.globals = globals[argv.e];
     }
@@ -181,6 +184,8 @@ function parseTestSettings(argv) {
   if (argv.verbose) {
     test_settings.silent = false;
   }
+
+  test_settings.output = test_settings.output || typeof test_settings.output === 'undefined';
 
   if (typeof argv.s == 'string') {
     test_settings.skipgroup = argv.s.split(',');
@@ -232,10 +237,19 @@ try {
       testsource = settings.src_folders;
     }
 
+    var errorHandler = function(err) {
+      if (err) {
+        if (err.message) {
+          Logger.error(err.message);
+        } else {
+          Logger.error('There was an error while running the test.');
+        }
+      }
+    };
+
     // running the tests
     if (settings.selenium && settings.selenium.start_process) {
       var selenium = require(__dirname + '/../runner/selenium.js');
-
       selenium.startServer(settings, test_settings, function(error, child, error_out, exitcode) {
         if (error) {
           Logger.error('There was an error while starting the Selenium server:');
@@ -245,19 +259,17 @@ try {
 
         runner.run(testsource, test_settings, {
           output_folder : output_folder,
-          src_folders : settings.src_folders,
-          selenium : (settings.selenium || null)
+          src_folders : settings.src_folders
         }, function(err) {
-          if (err) {
-            console.log(Logger.colors.red('There was an error while running the test.'));
-          }
+          errorHandler(err);
           selenium.stopServer();
         });
       });
     } else {
       runner.run(testsource, test_settings, {
-        output_folder : output_folder,
-        selenium : (settings.selenium || null)
+        output_folder : output_folder
+      }, function(err) {
+        errorHandler(err);
       });
     }
   }
