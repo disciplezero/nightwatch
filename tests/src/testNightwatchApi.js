@@ -1,6 +1,4 @@
-var BASE_PATH = process.env.NIGHTWATCH_COV
-  ? 'lib-cov'
-  : 'lib';
+var BASE_PATH = process.env.NIGHTWATCH_COV ? 'lib-cov' : 'lib';
 
 var Api = require('../../' + BASE_PATH + '/core/api.js');
 
@@ -52,22 +50,9 @@ module.exports = {
     test.ok('customCommandConstructor' in this.client.api, 'Test if the custom command with constructor style was added');
 
     var queue = client.enqueueCommand('customCommandConstructor', []);
-    var command = queue.currentNode.children[0];
+    var command = queue.currentNode;
     test.equal(command.name, 'customCommandConstructor');
     test.equal(command.context, client.api, 'Command should contain a reference to main client instance.');
-  },
-
-  testLocatorStrategy : function(test) {
-    var client = this.client;
-    client.on('selenium:session_create', function(sessionId) {
-      test.done();
-    });
-    Api.init(client);
-
-    client.api.useXpath();
-    test.equal(client.locateStrategy, 'xpath');
-    client.api.useCss();
-    test.equal(client.locateStrategy, 'css selector');
   },
 
   tearDown : function(callback) {

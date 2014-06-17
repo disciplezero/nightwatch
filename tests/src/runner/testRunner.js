@@ -5,8 +5,7 @@ var Runner = require('../../../'+ BASE_PATH +'/runner/run.js');
 
 module.exports = {
   testRunEmptyFolder : function(test) {
-    Runner.run([process.cwd() + '/sampletests/empty'], {
-    }, {
+    Runner.run([process.cwd() + '/sampletests/empty'], {}, {
       output_folder : false
     }, function(err) {
       test.ok(err.message.indexOf('No tests defined!') == 0);
@@ -87,7 +86,7 @@ module.exports = {
   },
 
   testRunMixed : function(test) {
-    test.expect(4);
+    test.expect(6);
 
     Runner.run([process.cwd() + '/sampletests/mixed'], {
       seleniumPort : 10195,
