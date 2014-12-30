@@ -3,7 +3,7 @@ var BASE_PATH = process.env.NIGHTWATCH_COV ? 'lib-cov' : 'lib';
 module.exports = {
   setUp: function (callback) {
     this.client = require('../nightwatch.js').init();
-    this.protocol = require('../../' + BASE_PATH + '/selenium/protocol.js')(this.client);
+    this.protocol = require('../../' + BASE_PATH + '/api/protocol.js')(this.client);
     callback();
   },
 
@@ -243,7 +243,7 @@ module.exports = {
       });
 
       test.equal(command.request.method, 'GET');
-      test.equal(command.request.path, '/wd/hub/session/1352110219202/element/TEST_ELEMENT/value');
+      test.equal(command.request.path, '/wd/hub/session/1352110219202/element/TEST_ELEMENT/attribute/value');
     });
   },
 
@@ -465,6 +465,34 @@ module.exports = {
     });
   },
 
+  testBack : function(test) {
+    var client = this.client;
+    var protocol = this.protocol;
+
+    this.client.on('selenium:session_create', function(sessionId) {
+      var command = protocol.back(function callback() {
+        test.done();
+      });
+
+      test.equal(command.request.method, 'POST');
+      test.equal(command.request.path, '/wd/hub/session/1352110219202/back');
+    });
+  },
+
+  testForward : function(test) {
+    var client = this.client;
+    var protocol = this.protocol;
+
+    this.client.on('selenium:session_create', function(sessionId) {
+      var command = protocol.forward(function callback() {
+        test.done();
+      });
+
+      test.equal(command.request.method, 'POST');
+      test.equal(command.request.path, '/wd/hub/session/1352110219202/forward');
+    });
+  },
+
   testDoubleClick : function(test) {
     var client = this.client;
     var protocol = this.protocol;
@@ -484,7 +512,7 @@ module.exports = {
     var protocol = this.protocol;
 
     this.client.on('selenium:session_create', function(sessionId) {
-      var command = protocol.screenshot(function callback() {
+      var command = protocol.screenshot(false, function callback() {
         test.done();
       });
 
@@ -703,6 +731,35 @@ module.exports = {
     });
   },
 
+  testGetAlertText: function(test) {
+    var client = this.client;
+    var protocol = this.protocol;
+
+    this.client.on('selenium:session_create', function(sessionId) {
+      var command = protocol.getAlertText(function callback() {
+        test.done();
+      });
+
+      test.equal(command.request.method, 'GET');
+      test.equal(command.request.path, '/wd/hub/session/1352110219202/alert_text');
+    });
+  },
+
+  testSetAlertText: function(test) {
+    var client = this.client;
+    var protocol = this.protocol;
+
+    this.client.on('selenium:session_create', function(sessionId) {
+      var command = protocol.setAlertText('prompt text to set', function callback() {
+        test.done();
+      });
+
+      test.equal(command.request.method, 'POST');
+      test.equal(command.data, '{"text":"prompt text to set"}');
+      test.equal(command.request.path, '/wd/hub/session/1352110219202/alert_text');
+    });
+  },
+
   testCookieGet : function(test) {
     var client = this.client;
     var protocol = this.protocol;
@@ -877,49 +934,6 @@ module.exports = {
       });
 
       test.equal(command.data, '{"value":["\\ue007"]}');
-    });
-  },
-
-  testUrlPostCommand : function(test) {
-    var protocol = this.protocol;
-    this.client.on('selenium:session_create', function(sessionId) {
-      var command = protocol.url('http://localhost');
-
-      test.equal(command.request.method, 'POST');
-      test.equal(command.data, '{"url":"http://localhost"}');
-      test.equal(command.request.path, '/wd/hub/session/1352110219202/url');
-      command.on('result', function() {
-        test.done();
-      });
-    });
-  },
-
-  testUrlGetCommand : function(test) {
-    var protocol = this.protocol;
-
-    this.client.on('selenium:session_create', function(sessionId) {
-      var command = protocol.url(function() {});
-
-      test.equal(command.request.method, 'GET');
-      test.equal(command.request.path, '/wd/hub/session/1352110219202/url');
-      command.on('result', function() {
-        test.done();
-      });
-    });
-  },
-
-  testUrlCommandCallback : function(test) {
-    var protocol = this.protocol;
-
-    this.client.on('selenium:session_create', function(sessionId) {
-      protocol.url(function() {
-        test.ok(true, 'Get callback called');
-      });
-
-      protocol.url('http://localhost', function() {
-        test.ok(true, 'Post callback called');
-        test.done();
-      });
     });
   },
 

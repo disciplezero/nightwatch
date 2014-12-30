@@ -16,20 +16,33 @@ try {
 }
 catch(e) {
   console.log(e);
-  console.log("Cannot find nodeunit module.");
+  console.log('Cannot find nodeunit module.');
   process.exit();
 }
 
 process.chdir(__dirname);
 
+process.removeAllListeners('uncaughtException');
+
 try {
   var server = require('mockserver').init();
   server.on('listening', function() {
-    reporter.run(['src', 'src/index', 'src/runner', 'src/assertions', 'src/commands'], options, function() {
+    reporter.run([
+      'src',
+      'src/index',
+      'src/runner',
+      'src/assertions',
+      'src/commands',
+      'src/protocol',
+      'src/http'
+    ], options, function(err) {
       server.close();
+      if (err) {
+        process.exit(1);
+      }
     });
   });
 } catch (err) {
-  console.log(e);
-  process.exit();
+  console.log(err.stack);
+  process.exit(1);
 }

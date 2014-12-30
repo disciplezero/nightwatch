@@ -6,7 +6,8 @@ var Runner = require('../../../'+ BASE_PATH +'/runner/run.js');
 module.exports = {
   setUp: function (callback) {
     this.client = require('../../nightwatch.js').init();
-
+    process.removeAllListeners('exit');
+    process.removeAllListeners('uncaughtException');
     callback();
   },
 
@@ -29,6 +30,7 @@ module.exports = {
   },
 
   'test run sample test with xpath' : function(test) {
+    test.expect(3);
     Runner.run([process.cwd() + '/sampletests/usexpath'], {
       seleniumPort : 10195,
       silent : true,

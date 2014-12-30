@@ -7,16 +7,16 @@ module.exports = {
     process.env['ENV_USERNAME'] = 'testuser';
 
     mockery.enable({ useCleanCache: true, warnOnUnregistered: false });
-    mockery.registerMock('./_cli.js', {
+    mockery.registerMock('./cli.js', {
       command : function(command) {
         return {
           isDefault : function() {
             return true;
           },
           defaults : function() {
-            return './nightwatch.json'
+            return './nightwatch.json';
           }
-        }
+        };
       }
     });
 
@@ -30,6 +30,8 @@ module.exports = {
     };
 
     mockery.registerMock('./nightwatch.json', config);
+    mockery.registerMock('./nightwatch.conf.js', config);
+
     mockery.registerMock('./output_disabled.json', {
       src_folders : ['tests'],
       output_folder : false,
@@ -68,6 +70,21 @@ module.exports = {
         }
       }
     });
+    mockery.registerMock('./sauce.json', {
+      src_folders : 'tests',
+      selenium : {
+        start_process: true
+      },
+      test_settings : {
+        'default' : {
+        },
+        'saucelabs' : {
+          selenium : {
+            start_process : false
+          }
+        }
+      }
+    });
     mockery.registerMock('./custom.json', {
       src_folders : ['tests'],
       selenium : {
@@ -88,6 +105,10 @@ module.exports = {
 
           selenium : {
             host : 'other.host'
+          },
+
+          desiredCapabilities : {
+            'test.user' : '${ENV_USERNAME}'
           }
         }
       }
@@ -116,6 +137,9 @@ module.exports = {
         if (b == 'demoGroup') {
           return 'tests/demoGroup';
         }
+        if (b == './sauce.json') {
+          return './sauce.json';
+        }
         return './nightwatch.json';
       },
       resolve : function(a) {
@@ -143,11 +167,11 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './nightwatch.json',
-      e : 'default',
-      o : 'output'
+      config : './nightwatch.json',
+      env : 'default',
+      output : 'output'
     }).init();
 
     test.deepEqual(runner.settings.src_folders, ['tests']);
@@ -155,8 +179,10 @@ module.exports = {
       silent: true,
       custom_commands_path: '',
       custom_assertions_path: '',
+      page_objects_path: '',
       output: true
     }});
+
     test.equals(runner.output_folder, 'output');
     test.equals(runner.parallelMode, false);
     test.equals(runner.manageSelenium, false);
@@ -168,17 +194,18 @@ module.exports = {
   testSetOutputFolder : function(test) {
     mockery.registerMock('fs', {
       existsSync : function(module) {
-        if (module == './settings.json') {
+        if (module == './settings.json' || module == './nightwatch.conf.js') {
           return false;
         }
+
         return true;
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './output_disabled.json',
-      e : 'default'
+      config : './output_disabled.json',
+      env : 'default'
     }).init();
 
     test.equals(runner.output_folder, false);
@@ -188,7 +215,7 @@ module.exports = {
   },
 
   testReadSettingsDeprecated : function(test) {
-    mockery.registerMock('../lib/util/logger.js', {
+    mockery.registerMock('../../util/logger.js', {
       disableColors : function() {
         test.ok('disable colors called');
       }
@@ -203,14 +230,14 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './nightwatch.json',
-      e : 'default',
-      o : 'output',
+      config : './nightwatch.json',
+      env : 'default',
+      output : 'output',
       verbose : true,
-      s : 'tobeskipped',
-      f : 'tests*.js'
+      skipgroup : 'tobeskipped',
+      filter : 'tests*.js'
     }).init();
 
     test.expect(6);
@@ -233,10 +260,10 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './custom.json',
-      e : 'extra'
+      config : './custom.json',
+      env : 'extra'
     }).init();
 
     test.equal(runner.manageSelenium, true);
@@ -245,6 +272,7 @@ module.exports = {
     test.equal(runner.test_settings.disable_colors, true);
     test.equal(runner.test_settings.username, 'testuser');
     test.equal(runner.test_settings.credentials.service.user, 'testuser');
+    test.equal(runner.test_settings.desiredCapabilities['test.user'], 'testuser');
     test.done();
   },
 
@@ -265,11 +293,11 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './custom.json',
-      e : 'default',
-      t : 'demoTest'
+      config : './custom.json',
+      env : 'default',
+      test : 'demoTest'
     }).init();
 
     var testSource = runner.getTestSource();
@@ -288,28 +316,28 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './custom.json',
-      e : 'default',
-      g : 'demoGroup'
+      config : './custom.json',
+      env : 'default',
+      group : 'demoGroup'
     }).init();
 
     var testSource = runner.getTestSource();
     test.deepEqual(testSource, ['tests/demoGroup']);
 
     var otherRunner = new CliRunner({
-      c : './custom.json',
-      e : 'default',
-      g : 'tests/demoGroup'
+      config : './custom.json',
+      env : 'default',
+      group : 'tests/demoGroup'
     }).init();
 
     testSource = otherRunner.getTestSource();
     test.deepEqual(testSource, ['tests/demoGroup']);
 
     var simpleRunner = new CliRunner({
-      c : './custom.json',
-      e : 'default'
+      config : './custom.json',
+      env : 'default'
     }).init();
 
     testSource = simpleRunner.getTestSource();
@@ -328,11 +356,11 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     test.throws(function() {
       new CliRunner({
-        c : './empty.json',
-        e : 'default'
+        config : './empty.json',
+        env : 'default'
       }).init();
     }, 'No testing environment specified.');
 
@@ -346,11 +374,11 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     test.throws(function() {
       new CliRunner({
-        c : './incorrect.json',
-        e : 'incorrect'
+        config : './incorrect.json',
+        env : 'incorrect'
       }).init();
     }, 'Invalid testing environment specified: incorrect');
 
@@ -367,10 +395,10 @@ module.exports = {
       }
     });
 
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './custom.json',
-      e : 'extra'
+      config : './custom.json',
+      env : 'extra'
     }).init();
 
     runner.settings.globals_path = './globals.json';
@@ -382,8 +410,8 @@ module.exports = {
 
     test.throws(function() {
       var runner = new CliRunner({
-        c : './custom.json',
-        e : 'extra'
+        config : './custom.json',
+        env : 'extra'
       }).init();
       runner.settings.globals_path = './incorrect.json';
       runner.readExternalGlobals();
@@ -394,10 +422,10 @@ module.exports = {
   },
 
   testStartSeleniumDisabled : function(test) {
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './nightwatch.json',
-      e : 'default'
+      config : './nightwatch.json',
+      env : 'default'
     }).init();
 
     runner.manageSelenium = false;
@@ -408,16 +436,35 @@ module.exports = {
     });
   },
 
+  testStartSeleniumDisabledPerEnvironment : function(test) {
+    mockery.registerMock('fs', {
+      existsSync : function(module) {
+        if (module == './sauce.json') {
+          return true;
+        }
+        return false;
+      }
+    });
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
+    var runner = new CliRunner({
+      config : './sauce.json',
+      env : 'saucelabs'
+    }).init();
+
+    test.equal(runner.manageSelenium, false);
+    test.done();
+  },
+
   testStartSeleniumEnabled : function(test) {
-    mockery.registerMock('../lib/runner/selenium.js', {
+    mockery.registerMock('../selenium.js', {
       startServer : function(settings, cb) {
         cb({}, null, 'Server already running.');
       }
     });
-    var CliRunner = require('../../../'+ BASE_PATH +'/../bin/_clirunner.js');
+    var CliRunner = require('../../../'+ BASE_PATH +'/../lib/runner/cli/clirunner.js');
     var runner = new CliRunner({
-      c : './nightwatch.json',
-      e : 'default'
+      config : './nightwatch.json',
+      env : 'default'
     }).init();
 
     runner.manageSelenium = true;

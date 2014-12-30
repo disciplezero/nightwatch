@@ -1,23 +1,8 @@
 module.exports = {
   setUp: function (callback) {
     this.client = require('../../nightwatch.js').init();
-    this.protocol = require('../../../lib/selenium/protocol.js')(this.client);
+    this.protocol = require('../../../lib/api/protocol.js')(this.client);
     callback();
-  },
-
-  testPostCommand : function(test) {
-    var client = this.client;
-    var protocol = this.protocol;
-    this.client.on('selenium:session_create', function(sessionId) {
-      var command = protocol.url('http://localhost');
-
-      test.equal(command.request.method, "POST");
-      test.equal(command.data, '{"url":"http://localhost"}');
-      test.equal(command.request.path, '/wd/hub/session/1352110219202/url');
-      command.on('result', function() {
-        test.done();
-      })
-    });
   },
 
   testGetCommand : function(test) {
@@ -32,6 +17,21 @@ module.exports = {
       command.on('result', function() {
         test.done();
       });
+    });
+  },
+
+  testPostCommand : function(test) {
+    var client = this.client;
+    var protocol = this.protocol;
+    this.client.on('selenium:session_create', function(sessionId) {
+      var command = protocol.url('http://localhost');
+
+      test.equal(command.request.method, "POST");
+      test.equal(command.data, '{"url":"http://localhost"}');
+      test.equal(command.request.path, '/wd/hub/session/1352110219202/url');
+      command.on('result', function() {
+        test.done();
+      })
     });
   },
 
